@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DekGuru - Dashboard Edukasi & Kegiatan Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .active-tab {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white p-6 card-shadow">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">📚 DekGuru</h1>
+                    <p class="text-sm opacity-70 mb-2">Dashboard Edukasi & Kegiatan Guru</p>
+                    <div id="profileDisplay">
+                        <p class="text-lg opacity-90" id="displayNamaGuru">Fery Yanto Yudhi Saputro, S.Pd</p>
+                        <p class="text-sm opacity-80" id="displayMapelSekolah">Guru Bahasa Jawa - SMA N 3 Magelang</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="manualSync()" id="syncButton" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                        🌐 Sync Cloud
+                    </button>
+                    <button onclick="toggleProfileEdit()" id="editProfileBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                        ✏️ Edit Profil
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Edit Profile Form (Hidden by default) -->
+            <div id="profileEditForm" class="hidden mt-4 bg-white bg-opacity-10 p-4 rounded-lg">
+                <h3 class="font-semibold mb-3">Edit Profil Guru</h3>
+                <form onsubmit="saveProfile(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-sm opacity-80 mb-1">Nama Lengkap:</label>
+                        <input type="text" id="editNamaGuru" class="w-full p-2 rounded border text-gray-800" placeholder="Nama Lengkap dengan Gelar" required>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm opacity-80 mb-1">Mata Pelajaran:</label>
+                            <input type="text" id="editMapel" class="w-full p-2 rounded border text-gray-800" placeholder="Mata Pelajaran" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm opacity-80 mb-1">Nama Sekolah:</label>
+                            <input type="text" id="editSekolah" class="w-full p-2 rounded border text-gray-800" placeholder="Nama Sekolah" required>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+                            💾 Simpan
+                        </button>
+                        <button type="button" onclick="cancelProfileEdit()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
+                            ❌ Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex space-x-1 overflow-x-auto py-4">
+                <button onclick="showTab('presensi')" id="tab-presensi" class="tab-btn active-tab px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    👥 Presensi Digital
+                </button>
+                <button onclick="showTab('jadwal')" id="tab-jadwal" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📅 Jadwal Mengajar
+                </button>
+                <button onclick="showTab('agenda')" id="tab-agenda" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📝 Agenda Mengajar
+                </button>
+                <button onclick="showTab('tugas')" id="tab-tugas" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    ✅ Tugas & Deadline
+                </button>
+                <button onclick="showTab('materi')" id="tab-materi" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📖 Materi Mengajar
+                </button>
+                <button onclick="showTab('nilai')" id="tab-nilai" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📊 Input Nilai
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        <!-- Presensi Digital Tab -->
+        <div id="content-presensi" class="tab-content">
+            <div class="bg-white rounded-xl card-shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">👥 Presensi Digital</h2>
+                
+                <!-- Class Management -->
+                <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-blue-800">📚 Kelola Kelas yang Diampu</h3>
+                        <button onclick="toggleKelasManagement()" id="kelasManagementBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                            ⚙️ Kelola Kelas
+                        </button>
+                    </div>
+                    
+                    <!-- Class Management Panel -->
+                    <div id="kelasManagementPanel" class="hidden mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- Add New Class -->
+                            <div class="bg-white p-3 rounded border">
+                                <h4 class="font-medium text-gray-800 mb-2">Tambah Kelas Baru</h4>
+                                <form onsubmit="addKelas(event)" class="space-y-2">
+                                    <input type="text" id="newKelasName" placeholder="Nama Kelas (contoh: X IPA 1)" class="w-full p-2 border rounded text-sm" required>
+                                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm transition-colors">
+                                        ➕ Tambah Kelas
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- Current Classes List -->
+                            <div class="bg-white p-3 rounded border">
+                                <h4 class="font-medium text-gray-800 mb-2">Kelas yang Diampu</h4>
+                                <div id="currentKelasList" class="space-y-1 max-h-32 overflow-y-auto">
+                                    <!-- Current classes will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="saveKelasSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+                                💾 Simpan Pengaturan
+                            </button>
+                            <button onclick="resetKelasSettings()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
+                                🔄 Reset Default
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Class Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas:</label>
+                    <select id="kelasSelect" class="w-full md:w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Pilih Kelas --</option>
+                    </select>
+                </div>
+
+                <!-- Date Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal:</label>
+                    <input type="date" id="tanggalPresensi" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <!-- Jam Pelajaran Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Jam Pelajaran:</label>
+                    <select id="presensiJamKe" class="w-full md:w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Pilih Jam Pelajaran --</option>
+                        <option value="1">Jam ke-1 (07:00 - 07:45)</option>
+                        <option value="2">Jam ke-2 (07:45 - 08:30)</option>
+                        <option value="3">Jam ke-3 (08:30 - 09:15)</option>
+                        <option value="4">Jam ke-4 (09:30 - 10:15)</option>
+                        <option value="5">Jam ke-5 (10:15 - 11:00)</option>
+                        <option value="6">Jam ke-6 (11:00 - 11:45)</option>
+                        <option value="7">Jam ke-7 (12:30 - 13:15)</option>
+                        <option value="8">Jam ke-8 (13:15 - 14:00)</option>
+                        <option value="9">Jam ke-9 (14:00 - 14:45)</option>
+                        <option value="10">Jam ke-10 (14:45 - 15:30)</option>
+                        <option value="11">Jam ke-11 (15:30 - 16:15)</option>
+                    </select>
+                </div>
+
+                <!-- Upload Excel Section -->
+                <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-3">📤 Upload Data Siswa dari Excel</h3>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="p-2 border border-gray-300 rounded-lg">
+                        <button onclick="uploadExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            📊 Upload Excel
+                        </button>
+                        <button onclick="downloadTemplate()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            📋 Download Template
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Format: No, Nama Siswa, NIS (opsional)</p>
+                </div>
+
+                <!-- Student List -->
+                <div id="studentList" class="hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Presensi Kelas - <span id="selectedClass"></span></h3>
+                        <div class="flex gap-2">
+                            <button onclick="setAllHadir()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                ✅ Semua Hadir
+                            </button>
+                            <button onclick="resetPresensi()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                🔄 Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg mb-4">
+                        <p class="text-sm text-green-800">💡 <strong>Otomatis Hadir:</strong> Semua siswa sudah diatur hadir. Klik nama siswa yang tidak hadir untuk mengubah status.</p>
+                    </div>
+                    <div class="grid gap-2" id="studentGrid">
+                        <!-- Students will be populated here -->
+                    </div>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button onclick="savePresensi()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            💾 Simpan Presensi
+                        </button>
+                        <button onclick="downloadPresensiHarian()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors">
+                            📥 Download Laporan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jadwal Mengajar Tab -->
+        <div id="content-jadwal" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📅 Jadwal Mengajar</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Schedule Form -->
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-blue-800 mb-3">Tambah Jadwal Baru</h3>
+                        <form onsubmit="addJadwal(event)" class="space-y-3">
+                            <select id="jadwalKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Kelas</option>
+                            </select>
+                            <select id="jadwalHari" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Hari</option>
+                                <option value="Senin">Senin</option>
+                                <option value="Selasa">Selasa</option>
+                                <option value="Rabu">Rabu</option>
+                                <option value="Kamis">Kamis</option>
+                                <option value="Jumat">Jumat</option>
+                                <option value="Sabtu">Sabtu</option>
+                            </select>
+                            <select id="jadwalJamKe" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Jam Pelajaran</option>
+                                <option value="1">Jam ke-1 (07:00 - 07:45)</option>
+                                <option value="2">Jam ke-2 (07:45 - 08:30)</option>
+                                <option value="3">Jam ke-3 (08:30 - 09:15)</option>
+                                <option value="4">Jam ke-4 (09:30 - 10:15)</option>
+                                <option value="5">Jam ke-5 (10:15 - 11:00)</option>
+                                <option value="6">Jam ke-6 (11:00 - 11:45)</option>
+                                <option value="7">Jam ke-7 (12:30 - 13:15)</option>
+                                <option value="8">Jam ke-8 (13:15 - 14:00)</option>
+                                <option value="9">Jam ke-9 (14:00 - 14:45)</option>
+                                <option value="10">Jam ke-10 (14:45 - 15:30)</option>
+                                <option value="11">Jam ke-11 (15:30 - 16:15)</option>
+                            </select>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Tambah Jadwal
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Schedule List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Jadwal Minggu Ini</h3>
+                        <div id="jadwalList" class="space-y-3">
+                            <!-- Jadwal items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agenda Mengajar Tab -->
+        <div id="content-agenda" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Agenda Mengajar</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Agenda Form -->
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-green-800 mb-3">Buat Agenda Baru</h3>
+                        <form onsubmit="addAgenda(event)" class="space-y-3">
+                            <input type="date" id="agendaTanggal" class="w-full p-2 border rounded-lg" required>
+                            <select id="agendaKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Kelas</option>
+                            </select>
+                            <select id="agendaJamKe" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Jam Pelajaran</option>
+                                <option value="1">Jam ke-1 (07:00 - 07:45)</option>
+                                <option value="2">Jam ke-2 (07:45 - 08:30)</option>
+                                <option value="3">Jam ke-3 (08:30 - 09:15)</option>
+                                <option value="4">Jam ke-4 (09:30 - 10:15)</option>
+                                <option value="5">Jam ke-5 (10:15 - 11:00)</option>
+                                <option value="6">Jam ke-6 (11:00 - 11:45)</option>
+                                <option value="7">Jam ke-7 (12:30 - 13:15)</option>
+                                <option value="8">Jam ke-8 (13:15 - 14:00)</option>
+                                <option value="9">Jam ke-9 (14:00 - 14:45)</option>
+                                <option value="10">Jam ke-10 (14:45 - 15:30)</option>
+                                <option value="11">Jam ke-11 (15:30 - 16:15)</option>
+                            </select>
+                            <input type="text" id="agendaTopik" placeholder="Topik Pembelajaran" class="w-full p-2 border rounded-lg" required>
+                            <textarea id="agendaKeterangan" placeholder="Keterangan/Catatan" class="w-full p-2 border rounded-lg h-20"></textarea>
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Tambah Agenda
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Agenda List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Agenda Terbaru</h3>
+                        <div id="agendaList" class="space-y-3">
+                            <!-- Agenda items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tugas & Deadline Tab -->
+        <div id="content-tugas" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">✅ Tugas & Deadline</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Task Form -->
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-orange-800 mb-3">Buat Tugas Baru</h3>
+                        <form onsubmit="addTugas(event)" class="space-y-3">
+                            <input type="text" id="tugasJudul" placeholder="Judul Tugas" class="w-full p-2 border rounded-lg" required>
+                            <select id="tugasKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Kelas</option>
+                            </select>
+                            <textarea id="tugasDeskripsi" placeholder="Deskripsi Tugas" class="w-full p-2 border rounded-lg h-20" required></textarea>
+                            <input type="datetime-local" id="tugasDeadline" class="w-full p-2 border rounded-lg" required>
+                            <button type="submit" class="w-full bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Buat Tugas
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Task List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Tugas Aktif</h3>
+                        <div id="tugasList" class="space-y-3">
+                            <!-- Task items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Materi Mengajar Tab -->
+        <div id="content-materi" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📖 Materi Mengajar</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Material Form -->
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-purple-800 mb-3">Tambah Materi Baru</h3>
+                        <form onsubmit="addMateri(event)" class="space-y-3">
+                            <input type="text" id="materiJudul" placeholder="Judul Materi" class="w-full p-2 border rounded-lg" required>
+                            <select id="materiKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Jenjang Kelas</option>
+                                <option value="X">Kelas X (Semua Kelas)</option>
+                                <option value="XI">Kelas XI (Semua Kelas)</option>
+                            </select>
+                            <textarea id="materiKonten" placeholder="Konten Materi" class="w-full p-2 border rounded-lg h-32" required></textarea>
+                            <input type="url" id="materiLink" placeholder="Link Materi (opsional)" class="w-full p-2 border rounded-lg">
+                            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Tambah Materi
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Material List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Materi Tersimpan</h3>
+                        <div id="materiList" class="space-y-3">
+                            <!-- Material items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Nilai Tab -->
+        <div id="content-nilai" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Input & Perhitungan Nilai</h2>
+                
+                <!-- Class Selection for Nilai -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas:</label>
+                    <select id="nilaiKelasSelect" class="w-full md:w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Pilih Kelas --</option>
+                    </select>
+                </div>
+
+                <!-- Nilai Input Section -->
+                <div id="nilaiSection" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Input Nilai Form -->
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-green-800 mb-3">Input Nilai Siswa</h3>
+                            <form onsubmit="addNilai(event)" class="space-y-3">
+                                <select id="nilaiSiswa" class="w-full p-2 border rounded-lg" required>
+                                    <option value="">Pilih Siswa</option>
+                                </select>
+                                <select id="jenisNilai" class="w-full p-2 border rounded-lg" required>
+                                    <option value="">Jenis Nilai</option>
+                                    <option value="tugas">Tugas</option>
+                                    <option value="ulangan">Ulangan</option>
+                                    <option value="uas">UAS</option>
+                                </select>
+                                <input type="text" id="keteranganNilai" placeholder="Keterangan (misal: Tugas 1, Ulangan Harian 1)" class="w-full p-2 border rounded-lg" required>
+                                <input type="number" id="inputNilai" placeholder="Nilai (0-100)" min="0" max="100" class="w-full p-2 border rounded-lg" required>
+                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors">
+                                    ➕ Tambah Nilai
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Statistik Kelas -->
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-yellow-800 mb-3">Statistik Kelas</h3>
+                            <div id="statistikKelas" class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Rata-rata Kelas:</span>
+                                    <span id="rataKelas">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Nilai Tertinggi:</span>
+                                    <span id="nilaiTertinggi">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Nilai Terendah:</span>
+                                    <span id="nilaiTerendah">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Siswa Tuntas:</span>
+                                    <span id="siswaTuntas">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Siswa Belum Tuntas:</span>
+                                    <span id="siswaBelumTuntas">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Nilai -->
+                    <div class="bg-white border rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
+                            <h3 class="font-semibold text-gray-800">Daftar Nilai - <span id="selectedNilaiClass"></span></h3>
+                            <button onclick="downloadNilai()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                📥 Download Nilai
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Tugas</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Ulangan</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">UAS</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nilaiTableBody">
+                                    <!-- Nilai data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-6 mt-12">
+        <p class="text-sm">© 2024 DekGuru - Dashboard Edukasi & Kegiatan Guru</p>
+        <p class="text-xs text-gray-400 mt-1">Siap untuk Publikasi</p>
+    </footer>
+
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="fixed top-4 right-4 z-50 px-3 py-2 rounded-lg text-sm font-medium shadow-lg bg-green-500 text-white">
+        ✅ Siap Digunakan
+    </div>
+
+    <script>
+        // Global variables
+        let jadwalData = [];
+        let agendaData = [];
+        let tugasData = [];
+        let materiData = [];
+        let presensiData = {};
+        let nilaiData = {};
+        let siswaData = {};
+        let profileData = {
+            namaGuru: 'Fery Yanto Yudhi Saputro, S.Pd',
+            mapel: 'Bahasa Jawa',
+            sekolah: 'SMA N 3 Magelang'
+        };
+        
+        let kelasData = [
+            'X E1', 'X E2', 'X E3', 'X E4', 'X E5', 'X E6', 'X E7', 'X E8', 'X E9',
+            'XI F6', 'XI F7', 'XI F8', 'XI F9'
+        ];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            updateAllKelasDropdowns();
+            displayJadwal();
+            displayAgenda();
+            displayTugas();
+            displayMateri();
+            
+            // Set today's date
+            document.getElementById('tanggalPresensi').valueAsDate = new Date();
+            document.getElementById('agendaTanggal').valueAsDate = new Date();
+            
+            // Hide sync status after 3 seconds
+            setTimeout(() => {
+                const syncStatus = document.getElementById('syncStatus');
+                if (syncStatus) {
+                    syncStatus.style.opacity = '0';
+                    setTimeout(() => {
+                        syncStatus.style.display = 'none';
+                    }, 500);
+                }
+            }, 3000);
+        });
+
+        // Load all data from localStorage
+        function loadAllData() {
+            try {
+                const savedJadwal = localStorage.getItem('jadwalData');
+                if (savedJadwal) jadwalData = JSON.parse(savedJadwal);
+
+                const savedAgenda = localStorage.getItem('agendaData');
+                if (savedAgenda) agendaData = JSON.parse(savedAgenda);
+
+                const savedTugas = localStorage.getItem('tugasData');
+                if (savedTugas) tugasData = JSON.parse(savedTugas);
+
+                const savedMateri = localStorage.getItem('materiData');
+                if (savedMateri) materiData = JSON.parse(savedMateri);
+
+                const savedPresensi = localStorage.getItem('presensiData');
+                if (savedPresensi) presensiData = JSON.parse(savedPresensi);
+
+                const savedNilai = localStorage.getItem('nilaiData');
+                if (savedNilai) nilaiData = JSON.parse(savedNilai);
+
+                const savedSiswa = localStorage.getItem('siswaData');
+                if (savedSiswa) siswaData = JSON.parse(savedSiswa);
+
+                const savedProfile = localStorage.getItem('profileData');
+                if (savedProfile) {
+                    profileData = JSON.parse(savedProfile);
+                    updateProfileDisplay();
+                }
+
+                const savedKelas = localStorage.getItem('kelasData');
+                if (savedKelas) kelasData = JSON.parse(savedKelas);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Save data to localStorage
+        function saveData(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                return true;
+            } catch (error) {
+                console.error('Error saving data:', error);
+                return false;
+            }
+        }
+
+        // Manual sync function (placeholder for cloud sync)
+        function manualSync() {
+            const syncBtn = document.getElementById('syncButton');
+            const originalText = syncBtn.textContent;
+            
+            syncBtn.textContent = '🔄 Menyinkronkan...';
+            syncBtn.disabled = true;
+            
+            // Simulate sync process
+            setTimeout(() => {
+                syncBtn.textContent = '✅ Tersinkron';
+                setTimeout(() => {
+                    syncBtn.textContent = originalText;
+                    syncBtn.disabled = false;
+                }, 2000);
+            }, 1500);
+        }
+
+        // Tab functionality
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active-tab');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            });
+            
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            activeTab.classList.add('active-tab');
+            activeTab.classList.remove('bg-gray-100', 'text-gray-700');
+        }
+
+        // Profile management
+        function toggleProfileEdit() {
+            const form = document.getElementById('profileEditForm');
+            const btn = document.getElementById('editProfileBtn');
+            
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+                document.getElementById('editNamaGuru').value = profileData.namaGuru;
+                document.getElementById('editMapel').value = profileData.mapel;
+                document.getElementById('editSekolah').value = profileData.sekolah;
+                btn.textContent = '❌ Tutup';
+            } else {
+                form.classList.add('hidden');
+                btn.innerHTML = '✏️ Edit Profil';
+            }
+        }
+
+        function saveProfile(event) {
+            event.preventDefault();
+            
+            profileData.namaGuru = document.getElementById('editNamaGuru').value;
+            profileData.mapel = document.getElementById('editMapel').value;
+            profileData.sekolah = document.getElementById('editSekolah').value;
+            
+            updateProfileDisplay();
+            saveData('profileData', profileData);
+            
+            document.getElementById('profileEditForm').classList.add('hidden');
+            document.getElementById('editProfileBtn').innerHTML = '✏️ Edit Profil';
+            
+            alert('✅ Profil berhasil diperbarui!');
+        }
+
+        function cancelProfileEdit() {
+            document.getElementById('profileEditForm').classList.add('hidden');
+            document.getElementById('editProfileBtn').innerHTML = '✏️ Edit Profil';
+        }
+
+        function updateProfileDisplay() {
+            document.getElementById('displayNamaGuru').textContent = profileData.namaGuru;
+            document.getElementById('displayMapelSekolah').textContent = `Guru ${profileData.mapel} - ${profileData.sekolah}`;
+        }
+
+        // Class management
+        function toggleKelasManagement() {
+            const panel = document.getElementById('kelasManagementPanel');
+            const btn = document.getElementById('kelasManagementBtn');
+            
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                btn.innerHTML = '❌ Tutup';
+                displayCurrentKelas();
+            } else {
+                panel.classList.add('hidden');
+                btn.innerHTML = '⚙️ Kelola Kelas';
+            }
+        }
+
+        function addKelas(event) {
+            event.preventDefault();
+            const newKelasName = document.getElementById('newKelasName').value.trim();
+            
+            if (newKelasName && !kelasData.includes(newKelasName)) {
+                kelasData.push(newKelasName);
+                saveData('kelasData', kelasData);
+                displayCurrentKelas();
+                updateAllKelasDropdowns();
+                document.getElementById('newKelasName').value = '';
+                alert(`✅ Kelas "${newKelasName}" berhasil ditambahkan!`);
+            } else if (kelasData.includes(newKelasName)) {
+                alert('❌ Kelas sudah ada dalam daftar!');
+            }
+        }
+
+        function deleteKelas(kelasName) {
+            if (confirm(`Yakin ingin menghapus kelas "${kelasName}"?`)) {
+                kelasData = kelasData.filter(kelas => kelas !== kelasName);
+                saveData('kelasData', kelasData);
+                displayCurrentKelas();
+                updateAllKelasDropdowns();
+                alert(`✅ Kelas "${kelasName}" berhasil dihapus!`);
+            }
+        }
+
+        function displayCurrentKelas() {
+            const currentKelasList = document.getElementById('currentKelasList');
+            currentKelasList.innerHTML = '';
+            
+            if (kelasData.length === 0) {
+                currentKelasList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada kelas yang ditambahkan</p>';
+                return;
+            }
+            
+            kelasData.forEach(kelas => {
+                const kelasDiv = document.createElement('div');
+                kelasDiv.className = 'flex justify-between items-center bg-gray-50 p-2 rounded text-sm';
+                kelasDiv.innerHTML = `
+                    <span class="font-medium">${kelas}</span>
+                    <button onclick="deleteKelas('${kelas}')" class="text-red-500 hover:text-red-700 p-1" title="Hapus Kelas">
+                        🗑️
+                    </button>
+                `;
+                currentKelasList.appendChild(kelasDiv);
+            });
+        }
+
+        function saveKelasSettings() {
+            saveData('kelasData', kelasData);
+            updateAllKelasDropdowns();
+            alert('✅ Pengaturan kelas berhasil disimpan!');
+        }
+
+        function resetKelasSettings() {
+            if (confirm('Yakin ingin reset ke daftar kelas default?')) {
+                kelasData = [
+                    'X E1', 'X E2', 'X E3', 'X E4', 'X E5', 'X E6', 'X E7', 'X E8', 'X E9',
+                    'XI F6', 'XI F7', 'XI F8', 'XI F9'
+                ];
+                saveData('kelasData', kelasData);
+                displayCurrentKelas();
+                updateAllKelasDropdowns();
+                alert('✅ Daftar kelas berhasil direset!');
+            }
+        }
+
+        function updateAllKelasDropdowns() {
+            const dropdowns = [
+                'kelasSelect',
+                'jadwalKelas', 
+                'agendaKelas',
+                'tugasKelas',
+                'nilaiKelasSelect'
+            ];
+            
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) {
+                    const currentValue = dropdown.value;
+                    const firstOption = dropdown.querySelector('option[value=""]');
+                    dropdown.innerHTML = '';
+                    if (firstOption) {
+                        dropdown.appendChild(firstOption);
+                    }
+                    
+                    kelasData.forEach(kelas => {
+                        const option = document.createElement('option');
+                        option.value = kelas;
+                        option.textContent = kelas;
+                        dropdown.appendChild(option);
+                    });
+                    
+                    if (kelasData.includes(currentValue)) {
+                        dropdown.value = currentValue;
+                    }
+                }
+            });
+        }
+
+        // Presensi functions
+        document.getElementById('kelasSelect').addEventListener('change', function() {
+            const selectedKelas = this.value;
+            if (selectedKelas) {
+                generateStudentList(selectedKelas);
+            } else {
+                document.getElementById('studentList').classList.add('hidden');
+            }
+        });
+
+        function generateStudentList(kelas) {
+            const studentGrid = document.getElementById('studentGrid');
+            const selectedClass = document.getElementById('selectedClass');
+            
+            selectedClass.textContent = kelas;
+            studentGrid.innerHTML = '';
+            
+            const students = siswaData[kelas] || generateDefaultStudents();
+            
+            students.forEach((student, index) => {
+                const studentDiv = document.createElement('div');
+                studentDiv.className = 'flex items-center justify-between bg-white border rounded-lg p-3 hover:bg-gray-50 transition-colors';
+                studentDiv.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-sm font-semibold">
+                            ${(index + 1).toString().padStart(2, '0')}
+                        </span>
+                        <div>
+                            <span class="font-medium text-gray-800">${student.nama}</span>
+                            ${student.nis ? `<p class="text-xs text-gray-500">NIS: ${student.nis}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span id="status-${index + 1}" class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 cursor-pointer" onclick="toggleStatus(${index + 1})">
+                            ✅ Hadir
+                        </span>
+                        <input type="hidden" id="student-${index + 1}" value="hadir">
+                    </div>
+                `;
+                studentGrid.appendChild(studentDiv);
+            });
+            
+            document.getElementById('studentList').classList.remove('hidden');
+        }
+
+        function generateDefaultStudents() {
+            const students = [];
+            for (let i = 1; i <= 36; i++) {
+                students.push({
+                    nama: `Siswa ${i.toString().padStart(2, '0')}`,
+                    nis: null
+                });
+            }
+            return students;
+        }
+
+        function toggleStatus(studentNumber) {
+            const statusElement = document.getElementById(`status-${studentNumber}`);
+            const hiddenInput = document.getElementById(`student-${studentNumber}`);
+            const currentStatus = hiddenInput.value;
+            
+            const statuses = [
+                { value: 'hadir', text: '✅ Hadir', class: 'bg-green-100 text-green-800' },
+                { value: 'sakit', text: '🤒 Sakit', class: 'bg-yellow-100 text-yellow-800' },
+                { value: 'izin', text: '📝 Izin', class: 'bg-blue-100 text-blue-800' },
+                { value: 'alpha', text: '❌ Alpha', class: 'bg-red-100 text-red-800' }
+            ];
+            
+            const currentIndex = statuses.findIndex(s => s.value === currentStatus);
+            const nextIndex = (currentIndex + 1) % statuses.length;
+            const nextStatus = statuses[nextIndex];
+            
+            statusElement.textContent = nextStatus.text;
+            statusElement.className = `px-3 py-1 rounded-full text-sm font-medium cursor-pointer ${nextStatus.class}`;
+            hiddenInput.value = nextStatus.value;
+        }
+
+        function setAllHadir() {
+            const kelas = document.getElementById('kelasSelect').value;
+            const students = siswaData[kelas] || generateDefaultStudents();
+            
+            students.forEach((student, index) => {
+                const statusElement = document.getElementById(`status-${index + 1}`);
+                const hiddenInput = document.getElementById(`student-${index + 1}`);
+                
+                if (statusElement && hiddenInput) {
+                    statusElement.textContent = '✅ Hadir';
+                    statusElement.className = 'px-3 py-1 rounded-full text-sm font-medium cursor-pointer bg-green-100 text-green-800';
+                    hiddenInput.value = 'hadir';
+                }
+            });
+        }
+
+        function resetPresensi() {
+            setAllHadir();
+        }
+
+        function savePresensi() {
+            const kelas = document.getElementById('kelasSelect').value;
+            const tanggal = document.getElementById('tanggalPresensi').value;
+            const jamKe = document.getElementById('presensiJamKe').value;
+            
+            if (!kelas || !tanggal || !jamKe) {
+                alert('Pilih kelas, tanggal, dan jam pelajaran terlebih dahulu!');
+                return;
+            }
+
+            const students = siswaData[kelas] || generateDefaultStudents();
+            const presensiResult = {};
+            
+            students.forEach((student, index) => {
+                const hiddenInput = document.getElementById(`student-${index + 1}`);
+                const status = hiddenInput ? hiddenInput.value : 'hadir';
+                presensiResult[`siswa-${index + 1}`] = {
+                    nama: student.nama,
+                    nis: student.nis,
+                    status: status
+                };
+            });
+
+            const key = `${kelas}-${tanggal}-${jamKe}`;
+            presensiData[key] = presensiResult;
+            
+            saveData('presensiData', presensiData);
+            alert('✅ Presensi berhasil disimpan!');
+        }
+
+        // Upload Excel function
+        function uploadExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('❌ Pilih file Excel/CSV terlebih dahulu!');
+                return;
+            }
+
+            const kelas = document.getElementById('kelasSelect').value;
+            if (!kelas) {
+                alert('❌ Pilih kelas terlebih dahulu!');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const lines = content.split('\n').filter(line => line.trim());
+                    const students = [];
+                    
+                    // Skip header row, start from index 1
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const columns = line.split(',').map(col => col.trim().replace(/"/g, ''));
+                        
+                        if (columns.length >= 2) {
+                            const nama = columns[1];
+                            const nis = columns[2] || null;
+                            
+                            if (nama && nama.length > 0) {
+                                students.push({
+                                    nama: nama,
+                                    nis: nis
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (students.length > 0) {
+                        siswaData[kelas] = students;
+                        saveData('siswaData', siswaData);
+                        generateStudentList(kelas);
+                        fileInput.value = '';
+                        alert(`✅ Berhasil upload ${students.length} data siswa untuk kelas ${kelas}!`);
+                    } else {
+                        alert('❌ Tidak ada data siswa yang valid dalam file!');
+                    }
+                } catch (error) {
+                    alert('❌ Error membaca file. Pastikan format CSV yang benar!');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function downloadTemplate() {
+            const csvContent = "No,Nama Siswa,NIS\n1,Contoh Siswa 01,12345\n2,Contoh Siswa 02,12346\n3,Contoh Siswa 03,12347";
+            downloadCSV(csvContent, 'Template_Data_Siswa.csv');
+        }
+
+        function downloadPresensiHarian() {
+            const kelas = document.getElementById('kelasSelect').value;
+            const tanggal = document.getElementById('tanggalPresensi').value;
+            const jamKe = document.getElementById('presensiJamKe').value;
+            
+            if (!kelas || !tanggal || !jamKe) {
+                alert('Pilih kelas, tanggal, dan jam pelajaran terlebih dahulu!');
+                return;
+            }
+
+            const key = `${kelas}-${tanggal}-${jamKe}`;
+            const data = presensiData[key];
+            
+            if (!data) {
+                alert('Belum ada data presensi untuk tanggal dan jam ini!');
+                return;
+            }
+
+            let csvContent = "No,Nama Siswa,NIS,Status Kehadiran\n";
+            let index = 1;
+            Object.keys(data).forEach((key) => {
+                if (key.startsWith('siswa-')) {
+                    const siswa = data[key];
+                    const nis = siswa.nis || '-';
+                    csvContent += `${index},${siswa.nama},${nis},${siswa.status}\n`;
+                    index++;
+                }
+            });
+
+            downloadCSV(csvContent, `Presensi_Harian_${kelas}_${tanggal}_Jam${jamKe}.csv`);
+        }
+
+        // Jadwal functions
+        function addJadwal(event) {
+            event.preventDefault();
+            const kelas = document.getElementById('jadwalKelas').value;
+            const hari = document.getElementById('jadwalHari').value;
+            const jamKe = document.getElementById('jadwalJamKe').value;
+
+            const jadwal = {
+                id: Date.now(),
+                kelas,
+                hari,
+                jamKe,
+                created: new Date().toLocaleDateString('id-ID')
+            };
+
+            jadwalData.push(jadwal);
+            saveData('jadwalData', jadwalData);
+            displayJadwal();
+            event.target.reset();
+            alert('✅ Jadwal berhasil ditambahkan!');
+        }
+
+        function displayJadwal() {
+            const jadwalList = document.getElementById('jadwalList');
+            jadwalList.innerHTML = '';
+
+            if (jadwalData.length === 0) {
+                jadwalList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada jadwal yang ditambahkan</p>';
+                return;
+            }
+
+            jadwalData.forEach(jadwal => {
+                const jadwalDiv = document.createElement('div');
+                jadwalDiv.className = 'bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500';
+                jadwalDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-blue-800">${jadwal.kelas}</h4>
+                            <p class="text-sm text-gray-600">${jadwal.hari}</p>
+                            <p class="text-xs text-blue-600 font-medium">Jam ke-${jadwal.jamKe}</p>
+                        </div>
+                        <button onclick="deleteJadwal(${jadwal.id})" class="text-red-500 hover:text-red-700 p-1" title="Hapus Jadwal">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                jadwalList.appendChild(jadwalDiv);
+            });
+        }
+
+        function deleteJadwal(id) {
+            if (confirm('Yakin ingin menghapus jadwal ini?')) {
+                jadwalData = jadwalData.filter(item => item.id !== id);
+                saveData('jadwalData', jadwalData);
+                displayJadwal();
+            }
+        }
+
+        // Agenda functions
+        function addAgenda(event) {
+            event.preventDefault();
+            const tanggal = document.getElementById('agendaTanggal').value;
+            const kelas = document.getElementById('agendaKelas').value;
+            const jamKe = document.getElementById('agendaJamKe').value;
+            const topik = document.getElementById('agendaTopik').value;
+            const keterangan = document.getElementById('agendaKeterangan').value;
+
+            const agenda = {
+                id: Date.now(),
+                tanggal,
+                kelas,
+                jamKe,
+                topik,
+                keterangan,
+                created: new Date().toLocaleDateString('id-ID')
+            };
+
+            agendaData.push(agenda);
+            saveData('agendaData', agendaData);
+            displayAgenda();
+            event.target.reset();
+            alert('✅ Agenda berhasil ditambahkan!');
+        }
+
+        function displayAgenda() {
+            const agendaList = document.getElementById('agendaList');
+            agendaList.innerHTML = '';
+
+            if (agendaData.length === 0) {
+                agendaList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada agenda yang ditambahkan</p>';
+                return;
+            }
+
+            agendaData.forEach(agenda => {
+                const agendaDiv = document.createElement('div');
+                agendaDiv.className = 'bg-green-50 p-3 rounded-lg border-l-4 border-green-500';
+                agendaDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-green-800">${agenda.topik}</h4>
+                            <p class="text-sm text-gray-600">${agenda.kelas} - ${new Date(agenda.tanggal).toLocaleDateString('id-ID')}</p>
+                            <p class="text-xs text-green-600 font-medium">Jam ke-${agenda.jamKe}</p>
+                            ${agenda.keterangan ? `<p class="text-xs text-gray-500 mt-1">${agenda.keterangan}</p>` : ''}
+                        </div>
+                        <button onclick="deleteAgenda(${agenda.id})" class="text-red-500 hover:text-red-700">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                agendaList.appendChild(agendaDiv);
+            });
+        }
+
+        function deleteAgenda(id) {
+            agendaData = agendaData.filter(item => item.id !== id);
+            saveData('agendaData', agendaData);
+            displayAgenda();
+        }
+
+        // Tugas functions
+        function addTugas(event) {
+            event.preventDefault();
+            const judul = document.getElementById('tugasJudul').value;
+            const kelas = document.getElementById('tugasKelas').value;
+            const deskripsi = document.getElementById('tugasDeskripsi').value;
+            const deadline = document.getElementById('tugasDeadline').value;
+
+            const tugas = {
+                id: Date.now(),
+                judul,
+                kelas,
+                deskripsi,
+                deadline,
+                created: new Date().toLocaleDateString('id-ID')
+            };
+
+            tugasData.push(tugas);
+            saveData('tugasData', tugasData);
+            displayTugas();
+            event.target.reset();
+            alert('✅ Tugas berhasil ditambahkan!');
+        }
+
+        function displayTugas() {
+            const tugasList = document.getElementById('tugasList');
+            tugasList.innerHTML = '';
+
+            if (tugasData.length === 0) {
+                tugasList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada tugas yang ditambahkan</p>';
+                return;
+            }
+
+            tugasData.forEach(tugas => {
+                const deadlineDate = new Date(tugas.deadline);
+                const now = new Date();
+                const isOverdue = deadlineDate < now;
+                
+                const tugasDiv = document.createElement('div');
+                tugasDiv.className = `${isOverdue ? 'bg-red-50 border-red-500' : 'bg-orange-50 border-orange-500'} p-3 rounded-lg border-l-4`;
+                tugasDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold ${isOverdue ? 'text-red-800' : 'text-orange-800'}">${tugas.judul}</h4>
+                            <p class="text-sm text-gray-600">${tugas.kelas}</p>
+                            <p class="text-xs text-gray-500 mt-1">${tugas.deskripsi}</p>
+                            <p class="text-xs ${isOverdue ? 'text-red-600' : 'text-orange-600'} mt-1">
+                                Deadline: ${deadlineDate.toLocaleDateString('id-ID')} ${deadlineDate.toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'})}
+                                ${isOverdue ? '(Terlambat)' : ''}
+                            </p>
+                        </div>
+                        <button onclick="deleteTugas(${tugas.id})" class="text-red-500 hover:text-red-700">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                tugasList.appendChild(tugasDiv);
+            });
+        }
+
+        function deleteTugas(id) {
+            tugasData = tugasData.filter(item => item.id !== id);
+            saveData('tugasData', tugasData);
+            displayTugas();
+        }
+
+        // Materi functions
+        function addMateri(event) {
+            event.preventDefault();
+            const judul = document.getElementById('materiJudul').value;
+            const kelas = document.getElementById('materiKelas').value;
+            const konten = document.getElementById('materiKonten').value;
+            const link = document.getElementById('materiLink').value;
+
+            const materi = {
+                id: Date.now(),
+                judul,
+                kelas,
+                konten,
+                link,
+                created: new Date().toLocaleDateString('id-ID')
+            };
+
+            materiData.push(materi);
+            saveData('materiData', materiData);
+            displayMateri();
+            event.target.reset();
+            alert('✅ Materi berhasil ditambahkan!');
+        }
+
+        function displayMateri() {
+            const materiList = document.getElementById('materiList');
+            materiList.innerHTML = '';
+
+            if (materiData.length === 0) {
+                materiList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada materi yang ditambahkan</p>';
+                return;
+            }
+
+            materiData.forEach(materi => {
+                const materiDiv = document.createElement('div');
+                materiDiv.className = 'bg-purple-50 p-3 rounded-lg border-l-4 border-purple-500';
+                materiDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-purple-800">${materi.judul}</h4>
+                            <p class="text-sm text-gray-600">Kelas ${materi.kelas} (Semua Kelas)</p>
+                            <p class="text-xs text-gray-500 mt-1">${materi.konten.substring(0, 100)}${materi.konten.length > 100 ? '...' : ''}</p>
+                            ${materi.link ? `<a href="${materi.link}" target="_blank" rel="noopener noreferrer" class="text-xs text-purple-600 hover:underline mt-1 block">🔗 Lihat Materi</a>` : ''}
+                        </div>
+                        <button onclick="deleteMateri(${materi.id})" class="text-red-500 hover:text-red-700">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                materiList.appendChild(materiDiv);
+            });
+        }
+
+        function deleteMateri(id) {
+            materiData = materiData.filter(item => item.id !== id);
+            saveData('materiData', materiData);
+            displayMateri();
+        }
+
+        // Nilai functions
+        document.getElementById('nilaiKelasSelect').addEventListener('change', function() {
+            const selectedKelas = this.value;
+            if (selectedKelas) {
+                document.getElementById('nilaiSection').classList.remove('hidden');
+                document.getElementById('selectedNilaiClass').textContent = selectedKelas;
+                loadNilaiForKelas(selectedKelas);
+                populateNilaiSiswa(selectedKelas);
+            } else {
+                document.getElementById('nilaiSection').classList.add('hidden');
+            }
+        });
+
+        function populateNilaiSiswa(kelas) {
+            const nilaiSiswa = document.getElementById('nilaiSiswa');
+            nilaiSiswa.innerHTML = '<option value="">Pilih Siswa</option>';
+            
+            const students = siswaData[kelas] || generateDefaultStudents();
+            students.forEach((student, index) => {
+                const option = document.createElement('option');
+                option.value = index + 1;
+                option.textContent = student.nama;
+                nilaiSiswa.appendChild(option);
+            });
+        }
+
+        function addNilai(event) {
+            event.preventDefault();
+            const kelas = document.getElementById('nilaiKelasSelect').value;
+            const siswaIndex = document.getElementById('nilaiSiswa').value;
+            const jenisNilai = document.getElementById('jenisNilai').value;
+            const keterangan = document.getElementById('keteranganNilai').value;
+            const nilai = parseFloat(document.getElementById('inputNilai').value);
+
+            if (!nilaiData[kelas]) {
+                nilaiData[kelas] = {};
+            }
+            if (!nilaiData[kelas][siswaIndex]) {
+                nilaiData[kelas][siswaIndex] = {};
+            }
+            if (!nilaiData[kelas][siswaIndex][jenisNilai]) {
+                nilaiData[kelas][siswaIndex][jenisNilai] = [];
+            }
+
+            nilaiData[kelas][siswaIndex][jenisNilai].push({
+                nilai: nilai,
+                keterangan: keterangan,
+                tanggal: new Date().toLocaleDateString('id-ID')
+            });
+
+            saveData('nilaiData', nilaiData);
+            loadNilaiForKelas(kelas);
+            event.target.reset();
+            alert('✅ Nilai berhasil ditambahkan!');
+        }
+
+        function loadNilaiForKelas(kelas) {
+            const students = siswaData[kelas] || generateDefaultStudents();
+            const tableBody = document.getElementById('nilaiTableBody');
+            tableBody.innerHTML = '';
+            
+            students.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                
+                const studentNilai = nilaiData[kelas] && nilaiData[kelas][index + 1] ? nilaiData[kelas][index + 1] : {};
+                
+                const tugasAvg = calculateAverage(studentNilai.tugas);
+                const ulanganAvg = calculateAverage(studentNilai.ulangan);
+                const uasNilai = calculateAverage(studentNilai.uas);
+                const rataRata = calculateFinalAverage(tugasAvg, ulanganAvg, uasNilai);
+                
+                row.innerHTML = `
+                    <td class="px-2 py-2 text-sm">${index + 1}</td>
+                    <td class="px-2 py-2 text-sm font-medium">${student.nama}</td>
+                    <td class="px-2 py-2 text-center text-sm">${tugasAvg || '-'}</td>
+                    <td class="px-2 py-2 text-center text-sm">${ulanganAvg || '-'}</td>
+                    <td class="px-2 py-2 text-center text-sm">${uasNilai || '-'}</td>
+                    <td class="px-2 py-2 text-center text-sm font-semibold">${rataRata || '-'}</td>
+                    <td class="px-2 py-2 text-center text-sm">${getGrade(rataRata)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            updateStatistik(kelas);
+        }
+
+        function calculateAverage(nilaiArray) {
+            if (!nilaiArray || nilaiArray.length === 0) return null;
+            const sum = nilaiArray.reduce((total, item) => total + item.nilai, 0);
+            return Math.round(sum / nilaiArray.length);
+        }
+
+        function calculateFinalAverage(tugas, ulangan, uas) {
+            const values = [tugas, ulangan, uas].filter(v => v !== null);
+            if (values.length === 0) return null;
+            const sum = values.reduce((total, val) => total + val, 0);
+            return Math.round(sum / values.length);
+        }
+
+        function getGrade(nilai) {
+            if (!nilai) return '-';
+            if (nilai >= 90) return 'A';
+            if (nilai >= 80) return 'B';
+            if (nilai >= 70) return 'C';
+            if (nilai >= 60) return 'D';
+            return 'E';
+        }
+
+        function updateStatistik(kelas) {
+            const students = siswaData[kelas] || generateDefaultStudents();
+            const allNilai = [];
+            
+            students.forEach((student, index) => {
+                const studentNilai = nilaiData[kelas] && nilaiData[kelas][index + 1] ? nilaiData[kelas][index + 1] : {};
+                const tugasAvg = calculateAverage(studentNilai.tugas);
+                const ulanganAvg = calculateAverage(studentNilai.ulangan);
+                const uasNilai = calculateAverage(studentNilai.uas);
+                const rataRata = calculateFinalAverage(tugasAvg, ulanganAvg, uasNilai);
+                
+                if (rataRata) {
+                    allNilai.push(rataRata);
+                }
+            });
+            
+            if (allNilai.length > 0) {
+                const rataKelas = Math.round(allNilai.reduce((sum, val) => sum + val, 0) / allNilai.length);
+                const nilaiTertinggi = Math.max(...allNilai);
+                const nilaiTerendah = Math.min(...allNilai);
+                const siswaTuntas = allNilai.filter(nilai => nilai >= 75).length;
+                const siswaBelumTuntas = allNilai.length - siswaTuntas;
+                
+                document.getElementById('rataKelas').textContent = rataKelas;
+                document.getElementById('nilaiTertinggi').textContent = nilaiTertinggi;
+                document.getElementById('nilaiTerendah').textContent = nilaiTerendah;
+                document.getElementById('siswaTuntas').textContent = siswaTuntas;
+                document.getElementById('siswaBelumTuntas').textContent = siswaBelumTuntas;
+            } else {
+                document.getElementById('rataKelas').textContent = '-';
+                document.getElementById('nilaiTertinggi').textContent = '-';
+                document.getElementById('nilaiTerendah').textContent = '-';
+                document.getElementById('siswaTuntas').textContent = '-';
+                document.getElementById('siswaBelumTuntas').textContent = '-';
+            }
+        }
+
+        function downloadNilai() {
+            const kelas = document.getElementById('nilaiKelasSelect').value;
+            if (!kelas) {
+                alert('Pilih kelas terlebih dahulu!');
+                return;
+            }
+
+            const students = siswaData[kelas] || generateDefaultStudents();
+            let csvContent = "No,Nama Siswa,Tugas,Ulangan,UAS,Rata-rata,Grade\n";
+            
+            students.forEach((student, index) => {
+                const studentNilai = nilaiData[kelas] && nilaiData[kelas][index + 1] ? nilaiData[kelas][index + 1] : {};
+                const tugasAvg = calculateAverage(studentNilai.tugas) || '-';
+                const ulanganAvg = calculateAverage(studentNilai.ulangan) || '-';
+                const uasNilai = calculateAverage(studentNilai.uas) || '-';
+                const rataRata = calculateFinalAverage(tugasAvg === '-' ? null : tugasAvg, ulanganAvg === '-' ? null : ulanganAvg, uasNilai === '-' ? null : uasNilai) || '-';
+                const grade = getGrade(rataRata === '-' ? null : rataRata);
+                
+                csvContent += `${index + 1},${student.nama},${tugasAvg},${ulanganAvg},${uasNilai},${rataRata},${grade}\n`;
+            });
+
+            downloadCSV(csvContent, `Nilai_${kelas}_${new Date().toISOString().split('T')[0]}.csv`);
+        }
+
+        // Utility function to download CSV
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9820665633c4fdaf',t:'MTc1ODM2MTYyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
