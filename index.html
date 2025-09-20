@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DekGuru - Dashboard Edukasi & Kegiatan Guru</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .active-tab {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white p-6 card-shadow">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">📚 DekGuru</h1>
+                    <p class="text-sm opacity-70 mb-2">Dashboard Edukasi & Kegiatan Guru</p>
+                    <div id="profileDisplay">
+                        <p class="text-lg opacity-90" id="displayNamaGuru">Fery Yanto Yudhi Saputro, S.Pd</p>
+                        <p class="text-sm opacity-80" id="displayMapelSekolah">Guru Bahasa Jawa - SMA N 3 Magelang</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="manualSync()" id="syncButton" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                        🌐 Sync Cloud
+                    </button>
+                    <button onclick="toggleProfileEdit()" id="editProfileBtn" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                        ✏️ Edit Profil
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Edit Profile Form (Hidden by default) -->
+            <div id="profileEditForm" class="hidden mt-4 bg-white bg-opacity-10 p-4 rounded-lg">
+                <h3 class="font-semibold mb-3">Edit Profil Guru</h3>
+                <form onsubmit="saveProfile(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-sm opacity-80 mb-1">Nama Lengkap:</label>
+                        <input type="text" id="editNamaGuru" class="w-full p-2 rounded border text-gray-800" placeholder="Nama Lengkap dengan Gelar" required>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm opacity-80 mb-1">Mata Pelajaran:</label>
+                            <input type="text" id="editMapel" class="w-full p-2 rounded border text-gray-800" placeholder="Mata Pelajaran" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm opacity-80 mb-1">Nama Sekolah:</label>
+                            <input type="text" id="editSekolah" class="w-full p-2 rounded border text-gray-800" placeholder="Nama Sekolah" required>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+                            💾 Simpan
+                        </button>
+                        <button type="button" onclick="cancelProfileEdit()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
+                            ❌ Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex space-x-1 overflow-x-auto py-4">
+                <button onclick="showTab('presensi')" id="tab-presensi" class="tab-btn active-tab px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    👥 Presensi Digital
+                </button>
+                <button onclick="showTab('jadwal')" id="tab-jadwal" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📅 Jadwal Mengajar
+                </button>
+                <button onclick="showTab('agenda')" id="tab-agenda" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📝 Agenda Mengajar
+                </button>
+                <button onclick="showTab('tugas')" id="tab-tugas" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    ✅ Tugas & Deadline
+                </button>
+                <button onclick="showTab('materi')" id="tab-materi" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📖 Materi Mengajar
+                </button>
+                <button onclick="showTab('nilai')" id="tab-nilai" class="tab-btn bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all">
+                    📊 Input Nilai
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        <!-- Presensi Digital Tab -->
+        <div id="content-presensi" class="tab-content">
+            <div class="bg-white rounded-xl card-shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">👥 Presensi Digital</h2>
+                
+                <!-- Class Management -->
+                <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-semibold text-blue-800">📚 Kelola Kelas yang Diampu</h3>
+                        <button onclick="toggleKelasManagement()" id="kelasManagementBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                            ⚙️ Kelola Kelas
+                        </button>
+                    </div>
+                    
+                    <!-- Class Management Panel -->
+                    <div id="kelasManagementPanel" class="hidden mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- Add New Class -->
+                            <div class="bg-white p-3 rounded border">
+                                <h4 class="font-medium text-gray-800 mb-2">Tambah Kelas Baru</h4>
+                                <form onsubmit="addKelas(event)" class="space-y-2">
+                                    <input type="text" id="newKelasName" placeholder="Nama Kelas (contoh: X IPA 1)" class="w-full p-2 border rounded text-sm" required>
+                                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm transition-colors">
+                                        ➕ Tambah Kelas
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- Current Classes List -->
+                            <div class="bg-white p-3 rounded border">
+                                <h4 class="font-medium text-gray-800 mb-2">Kelas yang Diampu</h4>
+                                <div id="currentKelasList" class="space-y-1 max-h-32 overflow-y-auto">
+                                    <!-- Current classes will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="saveKelasSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors">
+                                💾 Simpan Pengaturan
+                            </button>
+                            <button onclick="resetKelasSettings()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition-colors">
+                                🔄 Reset Default
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Class Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas:</label>
+                    <select id="kelasSelect" class="w-full md:w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Pilih Kelas --</option>
+                    </select>
+                </div>
+
+                <!-- Date Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal:</label>
+                    <input type="date" id="tanggalPresensi" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <!-- Jam Pelajaran Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Jam Pelajaran:</label>
+                    <select id="presensiJamKe" class="w-full md:w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Pilih Jam Pelajaran --</option>
+                        <option value="1">Jam ke-1 (07:00 - 07:45)</option>
+                        <option value="2">Jam ke-2 (07:45 - 08:30)</option>
+                        <option value="3">Jam ke-3 (08:30 - 09:15)</option>
+                        <option value="4">Jam ke-4 (09:30 - 10:15)</option>
+                        <option value="5">Jam ke-5 (10:15 - 11:00)</option>
+                        <option value="6">Jam ke-6 (11:00 - 11:45)</option>
+                        <option value="7">Jam ke-7 (12:30 - 13:15)</option>
+                        <option value="8">Jam ke-8 (13:15 - 14:00)</option>
+                        <option value="9">Jam ke-9 (14:00 - 14:45)</option>
+                        <option value="10">Jam ke-10 (14:45 - 15:30)</option>
+                        <option value="11">Jam ke-11 (15:30 - 16:15)</option>
+                    </select>
+                </div>
+
+                <!-- Upload Excel Section -->
+                <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-blue-800 mb-3">📤 Upload Data Siswa dari Excel</h3>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="p-2 border border-gray-300 rounded-lg">
+                        <button onclick="uploadExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            📊 Upload Excel
+                        </button>
+                        <button onclick="downloadTemplate()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                            📋 Download Template
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Format: No, Nama Siswa, NIS (opsional)</p>
+                </div>
+
+                <!-- Student List -->
+                <div id="studentList" class="hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Presensi Kelas - <span id="selectedClass"></span></h3>
+                        <div class="flex gap-2">
+                            <button onclick="setAllHadir()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                ✅ Semua Hadir
+                            </button>
+                            <button onclick="resetPresensi()" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                🔄 Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg mb-4">
+                        <p class="text-sm text-green-800">💡 <strong>Otomatis Hadir:</strong> Semua siswa sudah diatur hadir. Klik nama siswa yang tidak hadir untuk mengubah status.</p>
+                    </div>
+                    <div class="grid gap-2" id="studentGrid">
+                        <!-- Students will be populated here -->
+                    </div>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button onclick="savePresensi()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                            💾 Simpan Presensi
+                        </button>
+                        <button onclick="downloadPresensiHarian()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors">
+                            📥 Download Laporan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jadwal Mengajar Tab -->
+        <div id="content-jadwal" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📅 Jadwal Mengajar</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Schedule Form -->
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-blue-800 mb-3">Tambah Jadwal Baru</h3>
+                        <form onsubmit="addJadwal(event)" class="space-y-3">
+                            <select id="jadwalKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Kelas</option>
+                            </select>
+                            <select id="jadwalHari" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Hari</option>
+                                <option value="Senin">Senin</option>
+                                <option value="Selasa">Selasa</option>
+                                <option value="Rabu">Rabu</option>
+                                <option value="Kamis">Kamis</option>
+                                <option value="Jumat">Jumat</option>
+                                <option value="Sabtu">Sabtu</option>
+                            </select>
+                            <select id="jadwalJamKe" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Jam Pelajaran</option>
+                                <option value="1">Jam ke-1 (07:00 - 07:45)</option>
+                                <option value="2">Jam ke-2 (07:45 - 08:30)</option>
+                                <option value="3">Jam ke-3 (08:30 - 09:15)</option>
+                                <option value="4">Jam ke-4 (09:30 - 10:15)</option>
+                                <option value="5">Jam ke-5 (10:15 - 11:00)</option>
+                                <option value="6">Jam ke-6 (11:00 - 11:45)</option>
+                                <option value="7">Jam ke-7 (12:30 - 13:15)</option>
+                                <option value="8">Jam ke-8 (13:15 - 14:00)</option>
+                                <option value="9">Jam ke-9 (14:00 - 14:45)</option>
+                                <option value="10">Jam ke-10 (14:45 - 15:30)</option>
+                                <option value="11">Jam ke-11 (15:30 - 16:15)</option>
+                            </select>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Tambah Jadwal
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Schedule List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Jadwal Minggu Ini</h3>
+                        <div id="jadwalList" class="space-y-3">
+                            <!-- Jadwal items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agenda Mengajar Tab -->
+        <div id="content-agenda" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 Agenda Mengajar</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Agenda Form -->
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-green-800 mb-3">Buat Agenda Baru</h3>
+                        <form onsubmit="addAgenda(event)" class="space-y-3">
+                            <input type="date" id="agendaTanggal" class="w-full p-2 border rounded-lg" required>
+                            <select id="agendaKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Kelas</option>
+                            </select>
+                            <select id="agendaJamKe" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Jam Pelajaran</option>
+                                <option value="1">Jam ke-1 (07:00 - 07:45)</option>
+                                <option value="2">Jam ke-2 (07:45 - 08:30)</option>
+                                <option value="3">Jam ke-3 (08:30 - 09:15)</option>
+                                <option value="4">Jam ke-4 (09:30 - 10:15)</option>
+                                <option value="5">Jam ke-5 (10:15 - 11:00)</option>
+                                <option value="6">Jam ke-6 (11:00 - 11:45)</option>
+                                <option value="7">Jam ke-7 (12:30 - 13:15)</option>
+                                <option value="8">Jam ke-8 (13:15 - 14:00)</option>
+                                <option value="9">Jam ke-9 (14:00 - 14:45)</option>
+                                <option value="10">Jam ke-10 (14:45 - 15:30)</option>
+                                <option value="11">Jam ke-11 (15:30 - 16:15)</option>
+                            </select>
+                            <input type="text" id="agendaTopik" placeholder="Topik Pembelajaran" class="w-full p-2 border rounded-lg" required>
+                            <textarea id="agendaKeterangan" placeholder="Keterangan/Catatan" class="w-full p-2 border rounded-lg h-20"></textarea>
+                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Tambah Agenda
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Agenda List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Agenda Terbaru</h3>
+                        <div id="agendaList" class="space-y-3">
+                            <!-- Agenda items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tugas & Deadline Tab -->
+        <div id="content-tugas" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">✅ Tugas & Deadline</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Task Form -->
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-orange-800 mb-3">Buat Tugas Baru</h3>
+                        <form onsubmit="addTugas(event)" class="space-y-3">
+                            <input type="text" id="tugasJudul" placeholder="Judul Tugas" class="w-full p-2 border rounded-lg" required>
+                            <select id="tugasKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Kelas</option>
+                            </select>
+                            <textarea id="tugasDeskripsi" placeholder="Deskripsi Tugas" class="w-full p-2 border rounded-lg h-20" required></textarea>
+                            <input type="datetime-local" id="tugasDeadline" class="w-full p-2 border rounded-lg" required>
+                            <button type="submit" class="w-full bg-orange-600 hover:bg-orange-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Buat Tugas
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Task List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Tugas Aktif</h3>
+                        <div id="tugasList" class="space-y-3">
+                            <!-- Task items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Materi Mengajar Tab -->
+        <div id="content-materi" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📖 Materi Mengajar</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Add Material Form -->
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-purple-800 mb-3">Tambah Materi Baru</h3>
+                        <form onsubmit="addMateri(event)" class="space-y-3">
+                            <input type="text" id="materiJudul" placeholder="Judul Materi" class="w-full p-2 border rounded-lg" required>
+                            <select id="materiKelas" class="w-full p-2 border rounded-lg" required>
+                                <option value="">Pilih Jenjang Kelas</option>
+                                <option value="X">Kelas X (Semua Kelas)</option>
+                                <option value="XI">Kelas XI (Semua Kelas)</option>
+                            </select>
+                            <textarea id="materiKonten" placeholder="Konten Materi" class="w-full p-2 border rounded-lg h-32" required></textarea>
+                            <input type="url" id="materiLink" placeholder="Link Materi (opsional)" class="w-full p-2 border rounded-lg">
+                            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors">
+                                ➕ Tambah Materi
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Material List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">Materi Tersimpan</h3>
+                        <div id="materiList" class="space-y-3">
+                            <!-- Material items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Nilai Tab -->
+        <div id="content-nilai" class="tab-content hidden">
+            <div class="bg-white rounded-xl card-shadow p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Input & Perhitungan Nilai</h2>
+                
+                <!-- Class Selection for Nilai -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Kelas:</label>
+                    <select id="nilaiKelasSelect" class="w-full md:w-64 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">-- Pilih Kelas --</option>
+                    </select>
+                </div>
+
+                <!-- Nilai Input Section -->
+                <div id="nilaiSection" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Input Nilai Form -->
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-green-800 mb-3">Input Nilai Siswa</h3>
+                            <form onsubmit="addNilai(event)" class="space-y-3">
+                                <select id="nilaiSiswa" class="w-full p-2 border rounded-lg" required>
+                                    <option value="">Pilih Siswa</option>
+                                </select>
+                                <select id="jenisNilai" class="w-full p-2 border rounded-lg" required>
+                                    <option value="">Jenis Nilai</option>
+                                    <option value="tugas">Tugas</option>
+                                    <option value="ulangan">Ulangan</option>
+                                    <option value="uas">UAS</option>
+                                </select>
+                                <input type="text" id="keteranganNilai" placeholder="Keterangan (misal: Tugas 1, Ulangan Harian 1)" class="w-full p-2 border rounded-lg" required>
+                                <input type="number" id="inputNilai" placeholder="Nilai (0-100)" min="0" max="100" class="w-full p-2 border rounded-lg" required>
+                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors">
+                                    ➕ Tambah Nilai
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Statistik Kelas -->
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-yellow-800 mb-3">Statistik Kelas</h3>
+                            <div id="statistikKelas" class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Rata-rata Kelas:</span>
+                                    <span id="rataKelas">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Nilai Tertinggi:</span>
+                                    <span id="nilaiTertinggi">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Nilai Terendah:</span>
+                                    <span id="nilaiTerendah">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Siswa Tuntas:</span>
+                                    <span id="siswaTuntas">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Siswa Belum Tuntas:</span>
+                                    <span id="siswaBelumTuntas">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Nilai -->
+                    <div class="bg-white border rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b flex justify-between items-center">
+                            <h3 class="font-semibold text-gray-800">Daftar Nilai - <span id="selectedNilaiClass"></span></h3>
+                            <button onclick="downloadNilai()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                📥 Download Nilai
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                        <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nama Siswa</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Tugas</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Ulangan</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">UAS</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Rata-rata</th>
+                                        <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nilaiTableBody">
+                                    <!-- Nilai data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-6 mt-12">
+        <p class="text-sm">© 2024 DekGuru - Dashboard Edukasi & Kegiatan Guru</p>
+        <p class="text-xs text-gray-400 mt-1">Siap untuk Publikasi</p>
+    </footer>
+
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="fixed top-4 right-4 z-50 px-3 py-2 rounded-lg text-sm font-medium shadow-lg bg-green-500 text-white">
+        ✅ Siap Digunakan
+    </div>
+
+    
+    <script src="script.js"></script>
+</body>
+</html>
